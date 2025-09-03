@@ -4,55 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Usuarios - PetWise Chat</title>
-<style>
-body { font-family:sans-serif; padding:1rem; background:#ece5dd; }
-input { padding:0.5rem; width:100%; margin-bottom:1rem; border-radius:6px; border:1px solid #ccc; }
-.usuario { padding:1rem; margin-bottom:0.5rem; border:1px solid #ccc; border-radius:8px; cursor:pointer; background:#fff; }
-.usuario:hover { background:#f0f0f0; }
-</style>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body style="padding:20px;background:#f0f0f0;">
 
 <h2>Usuarios</h2>
-<input type="text" id="buscar" placeholder="Buscar por username">
-<div id="usuariosList"></div>
+<ul id="userList" class="list-group mt-3"></ul>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script>
-const supabaseUrl = "https://qetfppqdlmyvvrd;redxy.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFldGZwcHFkbG15dnZyZHJlZHh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5Mjg4MTksImV4cCI6MjA3MjUwNDgxOX0.gt9Bgl5yAWA-XZ0DWJvb850XkJyi7d4CPNrwVaB0RdQ";
+const supabaseUrl = "https://uhmnpclrrpxmzbfnroji.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVobW5wY2xycnB4bXpiZm5yb2ppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5MzM1NzgsImV4cCI6MjA3MjUwOTU3OH0.kjw1bFjucsVw43HnmNtMZ50MdqrYOypNo-Tgb_DpDgc";
 const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-const usuariosList = document.getElementById("usuariosList");
-const buscarInput = document.getElementById("buscar");
-const myId = localStorage.getItem("user_id");
-
-async function cargarUsuarios(filtro = "") {
-  let query = supabase.from("usuarios").select("*").neq("id", myId);
-  if(filtro) query = query.ilike("username", `%${filtro}%`);
-  
-  const { data, error } = await query;
-  if(error) return alert(error.message);
-
-  usuariosList.innerHTML = "";
-  data.forEach(u => {
-    const div = document.createElement("div");
-    div.className = "usuario";
-    div.textContent = u.username + " (" + (u.full_name || "") + ")";
-    div.addEventListener("click", () => {
-      window.location.href = "chat.html?to=" + u.id;
+async function cargarUsuarios(){
+    const { data, error } = await supabase.from("usuarios").select("*").order("username");
+    const list = document.getElementById("userList");
+    if(error) return alert(error.message);
+    data.forEach(u => {
+        const li = document.createElement("li");
+        li.className = "list-group-item d-flex justify-content-between align-items-center";
+        li.innerHTML = `${u.username} <a href="mensajes.html?to=${u.id}" class="btn btn-sm btn-success">Chatear</a>`;
+        list.appendChild(li);
     });
-    usuariosList.appendChild(div);
-  });
 }
 
-// Búsqueda en tiempo real
-buscarInput.addEventListener("input", () => {
-  const filtro = buscarInput.value.trim();
-  cargarUsuarios(filtro);
-});
-
-// Carga inicial
 cargarUsuarios();
 </script>
 </body>
