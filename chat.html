@@ -3,96 +3,69 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chat Real Time - PetWise</title>
+<title>Chat - PetWise</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
-body { font-family:sans-serif; margin:0; background:#ece5dd; display:flex; flex-direction:column; height:100vh; }
-#header { padding:1rem; background:#048c96; color:#fff; text-align:center; font-weight:bold; }
-#chat { flex:1; overflow-y:auto; padding:1rem; display:flex; flex-direction:column; gap:0.3rem; }
-.msg { max-width:70%; padding:0.5rem 0.8rem; border-radius:18px; line-height:1.3; word-wrap:break-word; }
-.mine { align-self:flex-end; background:#c6f2f8; border-bottom-right-radius:4px; }
-.other { align-self:flex-start; background:#fff; border-bottom-left-radius:4px; }
-.autor { font-size:0.75rem; font-weight:bold; margin-bottom:0.2rem; color:#555; }
-.hora { font-size:0.65rem; color:#555; text-align:right; margin-top:2px; }
-#inputArea { display:flex; gap:0.5rem; padding:0.5rem; background:#f0f0f0; }
-#mensaje { flex:1; padding:0.5rem; border-radius:20px; border:1px solid #ccc; resize:none; height:38px; }
-#enviar { background:#0093ad; color:#fff; border:none; border-radius:50%; width:45px; height:45px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.2rem; }
-#enviar:hover { background:#007b89; }
+body{font-family:sans-serif;background:#ece5dd;margin:0;}
+#chat{height:70vh;overflow-y:auto;padding:10px;border:1px solid #ccc;background:#fff;margin-bottom:10px;}
+.msg.mine{background:#c6f2f8;text-align:right;padding:5px;border-radius:5px;margin:5px;}
+.msg.other{background:#fff;text-align:left;padding:5px;border-radius:5px;margin:5px;}
 </style>
 </head>
-<body>
+<body class="p-3">
 
-<div id="header">Chat</div>
 <div id="chat"></div>
-
-<div id="inputArea">
-  <textarea id="mensaje" placeholder="Escribe tu mensaje..." maxlength="500" rows="2"></textarea>
-  <button id="enviar">&#9658;</button>
-</div>
+<textarea id="mensaje" rows="2" class="form-control" placeholder="Escribe tu mensaje..."></textarea>
+<button id="enviar" class="btn btn-primary mt-2">Enviar</button>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script>
-const supabaseUrl = "https://qetfppqdlmyvvrd;redxy.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFldGZwcHFkbG15dnZyZHJlZHh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5Mjg4MTksImV4cCI6MjA3MjUwNDgxOX0.gt9Bgl5yAWA-XZ0DWJvb850XkJyi7d4CPNrwVaB0RdQ";
+const supabaseUrl = "https://uhmnpclrrpxmzbfnroji.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVobW5wY2xycnB4bXpiZm5yb2ppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5MzM1NzgsImV4cCI6MjA3MjUwOTU3OH0.kjw1bFjucsVw43HnmNtMZ50MdqrYOypNo-Tgb_DpDgc";
 const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 const chatDiv = document.getElementById("chat");
 const mensajeInput = document.getElementById("mensaje");
 const enviarBtn = document.getElementById("enviar");
 
-const myId = localStorage.getItem("user_id");
-const toId = new URLSearchParams(window.location.search).get("to");
-
-let destinatarioNombre = "";
-
-// Obtener nombre del destinatario
-async function cargarDestinatario(){
-  const { data } = await supabase.from("usuarios").select("*").eq("id", toId).single();
-  destinatarioNombre = data.username;
-  document.getElementById("header").textContent = "Chat con " + destinatarioNombre;
+// Usuario actual
+let user = null;
+async function init() {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+    if(!user) window.location.href = "index.html";
 }
-cargarDestinatario();
+init();
 
-function horaLocal(ts){ const d = new Date(ts); return d.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit", hour12:false }); }
+// Usuario destino
+const params = new URLSearchParams(window.location.search);
+const toId = params.get("to");
 
-function agregarMensaje(m){
-  const div = document.createElement("div");
-  div.className = "msg " + (m.from_user === myId ? "mine" : "other");
-  div.innerHTML = `<div class="autor">${m.from_user === myId ? "Tú" : destinatarioNombre}</div>
-                   <div class="contenido">${m.contenido}</div>
-                   <div class="hora">${horaLocal(m.created_at)}</div>`;
-  chatDiv.appendChild(div);
-  chatDiv.scrollTop = chatDiv.scrollHeight;
-}
-
+// Mostrar mensajes
 async function cargarMensajes(){
-  const { data } = await supabase.from("mensajes")
-    .select("*")
-    .or(`and(from_user.eq.${myId},to_user.eq.${toId}),and(from_user.eq.${toId},to_user.eq.${myId})`)
-    .order("created_at",{ascending:true});
-  chatDiv.innerHTML = "";
-  if(data) data.forEach(agregarMensaje);
+    const { data } = await supabase.from("mensajes")
+        .select("*")
+        .or(`and(from_user.eq.${user.id},to_user.eq.${toId}),and(from_user.eq.${toId},to_user.eq.${user.id})`)
+        .order("created_at",{ascending:true});
+    chatDiv.innerHTML = "";
+    if(data) data.forEach(m => {
+        const div = document.createElement("div");
+        div.className = m.from_user===user.id?"msg mine":"msg other";
+        div.textContent = m.contenido;
+        chatDiv.appendChild(div);
+    });
+    chatDiv.scrollTop = chatDiv.scrollHeight;
 }
 cargarMensajes();
 
-async function enviarMensaje(){
-  const contenido = mensajeInput.value.trim();
-  if(!contenido) return;
-  await supabase.from("mensajes").insert([{ from_user: myId, to_user: toId, contenido }]);
-  mensajeInput.value = "";
-}
-enviarBtn.addEventListener("click", enviarMensaje);
-mensajeInput.addEventListener("keydown", e => { if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); enviarMensaje(); } });
-
-// Realtime
-supabase.channel('chat')
-  .on('postgres_changes', { event:'INSERT', schema:'public', table:'mensajes' }, payload => {
-    const m = payload.new;
-    if((m.from_user===myId && m.to_user===toId)||(m.from_user===toId && m.to_user===myId)){
-      agregarMensaje(m);
-    }
-  })
-  .subscribe();
+// Enviar mensaje
+enviarBtn.addEventListener("click", async () => {
+    const contenido = mensajeInput.value.trim();
+    if(!contenido) return;
+    await supabase.from("mensajes").insert([{ from_user: user.id, to_user: toId, contenido }]);
+    mensajeInput.value = "";
+    cargarMensajes();
+});
 </script>
-
 </body>
 </html>
