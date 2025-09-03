@@ -4,84 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PetWise Chat - Login</title>
-<style>
-body { display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; background:#ece5dd; }
-.card { padding:2rem; border-radius:12px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.15); }
-button { background:#0093ad; color:#fff; border:none; padding:0.75rem 1.5rem; border-radius:8px; cursor:pointer; font-size:1rem; }
-button:hover { background:#007b89; }
-input { padding:0.5rem; width:80%; margin-bottom:1rem; border-radius:6px; border:1px solid #ccc; }
-</style>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body class="d-flex flex-column align-items-center justify-content-center" style="height:100vh;background:#ece5dd;">
 
-<div class="card" id="loginCard">
-  <h2>Bienvenido a PetWise Chat</h2>
-  <button id="loginGoogle">Login con Google</button>
-</div>
-
-<div class="card" id="usernameCard" style="display:none;">
-  <h2>Elige tu nombre de usuario</h2>
-  <input type="text" id="usernameInput" placeholder="Usuario único">
-  <button id="saveUsername">Guardar</button>
-</div>
+<h2>Bienvenido a PetWise Chat</h2>
+<button id="loginGoogle" class="btn btn-primary mt-3">Iniciar sesión con Google</button>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script>
-const supabaseUrl = "https://qetfppqdlmyvvrd;redxy.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFldGZwcHFkbG15dnZyZHJlZHh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5Mjg4MTksImV4cCI6MjA3MjUwNDgxOX0.gt9Bgl5yAWA-XZ0DWJvb850XkJyi7d4CPNrwVaB0RdQ";
+const supabaseUrl = "https://uhmnpclrrpxmzbfnroji.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVobW5wY2xycnB4bXpiZm5yb2ppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5MzM1NzgsImV4cCI6MjA3MjUwOTU3OH0.kjw1bFjucsVw43HnmNtMZ50MdqrYOypNo-Tgb_DpDgc";
 const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-const loginCard = document.getElementById("loginCard");
-const usernameCard = document.getElementById("usernameCard");
-const usernameInput = document.getElementById("usernameInput");
-
-// Login con Google
-document.getElementById("loginGoogle").addEventListener("click", async () => {
-  const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-  if(error) alert(error.message);
-});
-
-// Detectar sesión
-supabase.auth.onAuthStateChange(async (event, session) => {
-  if(session){
-    const googleId = session.user.id;
-    const fullName = session.user.user_metadata.full_name || "";
-    
-    // Revisar si ya existe usuario
-    const { data } = await supabase.from("usuarios").select("*").eq("google_id", googleId).single();
-    if(data){
-      localStorage.setItem("user_id", data.id);
-      localStorage.setItem("username", data.username);
-      window.location.href = "usuarios.html";
-    } else {
-      loginCard.style.display = "none";
-      usernameCard.style.display = "block";
-    }
-  }
-});
-
-// Guardar username
-document.getElementById("saveUsername").addEventListener("click", async () => {
-  const username = usernameInput.value.trim();
-  if(!username) return alert("Escribe un nombre de usuario");
-
-  const { data: sessionData } = await supabase.auth.getSession();
-  const googleId = sessionData.session.user.id;
-  const fullName = sessionData.session.user.user_metadata.full_name || "";
-  
-  const { error, data } = await supabase.from("usuarios").insert([
-    { google_id: googleId, username, full_name: fullName }
-  ]).select().single();
-
-  if(error){
-    alert("Nombre de usuario ya usado. Elige otro.");
-  } else {
-    localStorage.setItem("user_id", data.id);
-    localStorage.setItem("username", data.username);
-    window.location.href = "usuarios.html";
-  }
+const loginBtn = document.getElementById('loginGoogle');
+loginBtn.addEventListener('click', async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+            redirectTo: window.location.origin + "/usuarios.html"
+        }
+    });
+    if(error) alert(error.message);
 });
 </script>
-
 </body>
 </html>
